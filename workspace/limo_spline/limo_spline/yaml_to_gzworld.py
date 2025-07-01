@@ -34,8 +34,9 @@ class WorldConverter():
         self.world_file = open(world_path, 'w')
         self.world_name = os.path.splitext(os.path.basename(world_path))[0]
         self.convert_to_gz_world()
-        
         self.world_file.close()
+
+        self.get_spawn_coords()
     
     def convert_to_gz_world(self):
         self.write_header()
@@ -55,8 +56,8 @@ class WorldConverter():
             self.write_obstacle(obstacle_name, obstacle_x, obstacle_y, obstacle_length_x, obstacle_length_y, self.OBSTACLE_HEIGHT, self.OBSTACLE_COLOR)
         
         world_area = self.map_file.get("area")
-        x_range = world_area.get("x_range")
-        y_range = world_area.get("y_range")
+        x_range = self.SCALE_FACTOR * world_area.get("x_range")
+        y_range = self.SCALE_FACTOR * world_area.get("y_range")
         self.write_boundary(x_range, y_range)
 
         self.write_footer()
@@ -108,6 +109,12 @@ class WorldConverter():
 
         self.write_obstacle("left_wall", vert_boundary_x1, vert_boundary_y, vert_boundary_length, vert_boundary_width, self.BOUNDARY_HEIGHT, self.BOUNDARY_COLOR)
         self.write_obstacle("right_wall", vert_boundary_x2, vert_boundary_y, vert_boundary_length, vert_boundary_width, self.BOUNDARY_HEIGHT, self.BOUNDARY_COLOR)
+
+    def get_spawn_coords(self):
+        path = self.map_file.get("path")
+        x_coord = self.SCALE_FACTOR * path.get("path_points_x")[0]
+        y_coord = self.SCALE_FACTOR * path.get("path_points_y")[0]
+        self.spawn_coords = (x_coord, y_coord)
 
 def main():
     args = parse_cli_args()
