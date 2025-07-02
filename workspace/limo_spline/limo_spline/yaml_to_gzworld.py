@@ -13,9 +13,9 @@ def parse_cli_args():
     
     return args
 
-class WorldConverter():
+class WorldConverter:
 
-    SCALE_FACTOR = 0.1
+    SCALE_FACTOR = 1
 
     OBSTACLE_HEIGHT = 1
     OBSTACLE_COLOR = "brown"

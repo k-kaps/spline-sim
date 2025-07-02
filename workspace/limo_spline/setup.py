@@ -17,6 +17,11 @@ setup(
         (f"share/{package_name}/launch", glob("launch/*.launch.py")),
         (f"share/{package_name}/template_files", glob("limo_spline/template_files/*"))
     ],
-    install_requires=["setuptools"],
-    zip_safe=True
+    install_requires=["setuptools", "spline"],
+    zip_safe=True,
+    entry_points={
+        'console_scripts': [
+            'spline_path_publisher = limo_spline.spline_path_publisher:main',
+        ],
+    }
 )

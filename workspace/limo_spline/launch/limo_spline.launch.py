@@ -1,33 +1,32 @@
 #!/usr/bin/python3
 
 from os.path import join
-from xacro import parse, process_doc
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, AppendEnvironmentVariable, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch.substitutions import LaunchConfiguration, Command, PythonExpression
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from limo_spline.yaml_to_gzworld import WorldConverter
-import yaml
 
 def spawn_entity_in_gzsim(context, *args, **kwargs):
-    map_path = str(LaunchConfiguration("map_path").perform(context))
-    world_path = str(LaunchConfiguration("world_path").perform(context))
+    map_file = str(LaunchConfiguration("map_file").perform(context))
+    world_file = str(LaunchConfiguration("world_file").perform(context))
+
     gz_sim_share = get_package_share_directory("ros_gz_sim")
 
-    MapObj = WorldConverter(map_path, world_path)
+    world_conv_obj = WorldConverter(map_file, world_file)
 
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(join(gz_sim_share, "launch", "gz_sim.launch.py")),
         launch_arguments={
-            "gz_args" : PythonExpression(["'", world_path, " -r'"])
+            "gz_args" : PythonExpression(["'", world_file, " -r'"])
 
         }.items()
     )
 
-    x_coord = MapObj.spawn_coords[0]
-    y_coord = MapObj.spawn_coords[1]
+    x_coord = world_conv_obj.spawn_coords[0]
+    y_coord = world_conv_obj.spawn_coords[1]
 
     gz_spawn_entity = Node(
         package="ros_gz_sim",
@@ -42,11 +41,43 @@ def spawn_entity_in_gzsim(context, *args, **kwargs):
             "-Y", "0.3"
         ]
     )
+
     return [gz_spawn_entity, gz_sim]
+
+def launch_spline_nodes(context, *args, **kwargs):
+    map_file = str(LaunchConfiguration("map_file").perform(context))
+    world_file = str(LaunchConfiguration("world_file").perform(context))
+    technique = str(LaunchConfiguration("technique").perform(context))
+
+    spline_path_publisher = Node (
+        package="limo_spline",
+        executable="spline_path_publisher",
+        name="spline_path_publisher",
+        parameters = [{
+            "map_file" : map_file,
+            "technique" : technique
+        }]
+    )
+
+    return [spline_path_publisher] 
 
 def generate_launch_description():
     limobot_path = get_package_share_directory("limo_simulation")
-    use_sim_time = LaunchConfiguration("use_sim_time", default=True)
+
+    map_file_launch_arg = DeclareLaunchArgument (
+        'map_file',
+        description="path to the YAML map file"
+    )
+
+    world_file_launch_arg = DeclareLaunchArgument(
+        'world_file',
+        description="path to the gazebo world file"
+    )
+
+    technique_launch_arg = DeclareLaunchArgument(
+        'technique',
+        description="technique to use for creating the curves"
+    )
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
@@ -80,20 +111,11 @@ def generate_launch_description():
         ]
     )
 
-    map_path_launch_arg = DeclareLaunchArgument (
-        'map_path',
-        description="path to the YAML map file"
-    )
-
-    world_path_launch_arg = DeclareLaunchArgument(
-        'world_path',
-        description="path to the gazebo world file"
-    )
-
     return LaunchDescription([
-        map_path_launch_arg,
-        world_path_launch_arg,
+        map_file_launch_arg,
+        world_file_launch_arg,
         robot_state_publisher,
         OpaqueFunction(function=spawn_entity_in_gzsim),
+        OpaqueFunction(function=launch_spline_nodes),
         gz_ros2_bridge
     ])
