@@ -9,7 +9,7 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from limo_spline.yaml_to_gzworld import WorldConverter
 
-def spawn_entity_in_gzsim(context, *args, **kwargs):
+def spawn_robot_in_gzsim(context, *args, **kwargs):
     map_file = str(LaunchConfiguration("map_file").perform(context))
     world_file = str(LaunchConfiguration("world_file").perform(context))
 
@@ -42,12 +42,33 @@ def spawn_entity_in_gzsim(context, *args, **kwargs):
         ]
     )
 
-    return [gz_spawn_entity, gz_sim]
+    tf_world_to_odom = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="tf_world_to_odom",
+        arguments=[
+            str(x_coord), str(y_coord), "0",
+            "0", "0", str(0.3),
+            "world", "odom"
+        ]
+    )
+
+    tf_odom_to_base_footprint = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="static_world_to_odom",
+        arguments=[
+            "0", "0", "0",
+            "0", "0", "0",
+            "odom", "base_footprint"
+        ]
+    )
+
+    return [gz_sim, tf_world_to_odom, tf_odom_to_base_footprint, gz_spawn_entity]
 
 def launch_spline_nodes(context, *args, **kwargs):
-    map_file = str(LaunchConfiguration("map_file").perform(context))
-    world_file = str(LaunchConfiguration("world_file").perform(context))
-    technique = str(LaunchConfiguration("technique").perform(context))
+    map_file = LaunchConfiguration("map_file").perform(context)
+    technique = LaunchConfiguration("technique").perform(context)
 
     spline_path_publisher = Node (
         package="limo_spline",
@@ -114,8 +135,9 @@ def generate_launch_description():
     return LaunchDescription([
         map_file_launch_arg,
         world_file_launch_arg,
+        technique_launch_arg,
         robot_state_publisher,
-        OpaqueFunction(function=spawn_entity_in_gzsim),
+        OpaqueFunction(function=spawn_robot_in_gzsim),
         OpaqueFunction(function=launch_spline_nodes),
         gz_ros2_bridge
     ])
