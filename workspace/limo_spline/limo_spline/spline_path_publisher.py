@@ -7,7 +7,7 @@ import math
 
 class SplinePathPublisher(Node):
     def __init__(self):
-        self.ROBOT_ELEVATION = 0.0
+        self.ROBOT_ELEVATION = 0.3
         super().__init__("spline_path_publisher")
 
         self.declare_parameter("map_file", "")
@@ -56,7 +56,7 @@ class SplinePathPublisher(Node):
             pose_msg.pose.position.z = self.ROBOT_ELEVATION
 
             if (i == len(segment) - 1):
-                yaw = 0.0
+                yaw = prev_yaw
             else:
                 x_next, y_next = segment[i + 1]
                 yaw = math.atan2(y_next - y_current, x_next - x_current)
@@ -64,6 +64,7 @@ class SplinePathPublisher(Node):
             pose_msg.pose.orientation = self.compute_orientation(yaw)
         
             segment_pose_msg_list.append(pose_msg)
+            prev_yaw = yaw
         
         return segment_pose_msg_list
     
