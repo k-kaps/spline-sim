@@ -7,7 +7,7 @@ import math
 
 class SplinePathPublisher(Node):
     def __init__(self):
-        self.ROBOT_ELEVATION = 0.3
+        self.ROBOT_ELEVATION = 0.0
         super().__init__("spline_path_publisher")
 
         self.declare_parameter("map_file", "")
