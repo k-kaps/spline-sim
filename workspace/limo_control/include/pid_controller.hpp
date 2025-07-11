@@ -3,21 +3,17 @@
 
 class PIDController {
 public:
-    PIDController() 
-    : lin_kp(0), lin_ki(0), lin_kd(0), ang_kp(0), ang_ki(0), ang_kd(0), fixing_yaw(false) {}
-    PIDController(float lin_kp, float lin_ki, float lin_kd, float ang_kp, float ang_ki, float ang_kd);
-    void update(double linear_error, double angular_error);
+    PIDController() : fixing_yaw(true) {};
+    PIDController(float kp, float ki, float kd);
+    double update(double error);
     void reset();
     geometry_msgs::msg::Twist output_cmd_vel;
 
 private:
     
-    float lin_kp = 0.0;
-    float lin_ki = 0.0;
-    float lin_kd = 0.0;
-    float ang_kp = 0.0;
-    float ang_ki = 0.0;
-    float ang_kd = 0.0;
+    float kp = 0.0;
+    float ki = 0.0;
+    float kd = 0.0;
     
     bool fixing_yaw = true;
 

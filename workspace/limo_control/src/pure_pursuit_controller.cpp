@@ -12,15 +12,11 @@ PurePursuitController::PurePursuitController() : Node("pure_pursuit_controller")
     tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
-    double linear_kp = 0.2;
-    double linear_ki = 0.0;
-    double linear_kd = 0.0;
+    float angular_kp = 0.08;
+    float angular_ki = 0.01;
+    float angular_kd = 0.01;
 
-    double angular_kp = 0.2;
-    double angular_ki = 0.2;
-    double angular_kd = 0.3;
-
-    pid_controller = PIDController(linear_kp, linear_ki, linear_kd, angular_kp, angular_ki, angular_kd);
+    pid_controller = PIDController(angular_kp, angular_ki, angular_kd);
 }
 
 void PurePursuitController::process_path(const nav_msgs::msg::Path::SharedPtr path_msg) {
@@ -37,7 +33,8 @@ void PurePursuitController::process_odom(const nav_msgs::msg::Odometry::SharedPt
         compute_cmd_vel();
     }
     else {
-        // we have reached the final target point
+        geometry_msgs::msg::Twist cmd_vel;
+        vel_publisher->publish(cmd_vel);
     }
 }
 
@@ -48,6 +45,7 @@ bool PurePursuitController::store_target_pose() {
         double dist = std::sqrt((dist_x * dist_x) + (dist_y * dist_y));
         if (dist > this->ld) {
             target_pose = robot_path.poses[i];
+            prev_start_pt = start_pt;
             start_pt  = i;
             return true;
         }
@@ -59,15 +57,45 @@ bool PurePursuitController::store_target_pose() {
     return false;
 }
 
+void PurePursuitController::compute_cmd_vel_carrot() {
+    double v = 0.1;  // fixed speed
+    double k = 3;  // heading gain
+
+    double dx = target_pose.pose.position.x - current_pose.position.x;
+    double dy = target_pose.pose.position.y - current_pose.position.y;
+
+    double path_yaw = std::atan2(dy, dx);
+    double robot_yaw = tf2::getYaw(current_pose.orientation);
+    double heading_error = path_yaw - robot_yaw;
+
+    heading_error = std::atan2(std::sin(heading_error), std::cos(heading_error));  // normalize
+
+    geometry_msgs::msg::Twist cmd;
+    cmd.linear.x = v;
+    cmd.angular.z = k * heading_error;
+
+    vel_publisher->publish(cmd);
+}
+
+
 void PurePursuitController::compute_cmd_vel() {
-    pid_controller.update(linear_error, angular_error);
-    vel_publisher->publish(pid_controller.output_cmd_vel);
+    // if this is the first point we are heading for and we haven't met the desired heading
+    if (pid_adjustment == false){
+        // only do heading correction first
+        pid_adjustment = pid_controller.update(angular_error);
+        RCLCPP_INFO(this->get_logger(), "the output val: %f", pid_controller.output_cmd_vel.angular.z);
+        vel_publisher->publish(pid_controller.output_cmd_vel);
+    }
+    else {
+        RCLCPP_INFO(this->get_logger(), "We made it out");
+        compute_cmd_vel_carrot();
+    }
 }
 
 void PurePursuitController::compute_errors() {
     double dist_x = this->target_pose.pose.position.x - this->current_pose.position.x;
     double dist_y = this->target_pose.pose.position.y - this->current_pose.position.y;
-    double yaw = tf2::getYaw(this->target_pose.pose.orientation);
+    double yaw = tf2::getYaw(this->current_pose.orientation);
     double desired_heading = std::atan2(dist_y, dist_x);
 
     this->linear_error = std::sqrt((dist_x * dist_x) + (dist_y * dist_y));
@@ -78,8 +106,7 @@ void PurePursuitController::compute_errors() {
 }
 
 void PurePursuitController::normalize_angular_error() {
-    while (this->angular_error > M_PI) this->angular_error -= M_PI;
-    while (this->angular_error < -M_PI) this->angular_error += M_PI;
+    this->angular_error = std::atan2(std::sin(this->angular_error), std::cos(this->angular_error));
 }
 
 void PurePursuitController::transform_robot_odom(const nav_msgs::msg::Odometry::SharedPtr odom_msg) {

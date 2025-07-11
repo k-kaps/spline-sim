@@ -24,9 +24,13 @@ private:
 
     void process_path(const nav_msgs::msg::Path::SharedPtr path_msg);
     void process_odom(const nav_msgs::msg::Odometry::SharedPtr odom_msg);
+    // void process_pose(const geometry_msgs::msg::PoseStamped::SharedPtr pose_msg);
     void transform_robot_odom(const nav_msgs::msg::Odometry::SharedPtr odom_msg);
+    // void transform_robot_pose(const geometry_msgs::msg::PoseStamped::SharedPtr pose_msg);
     bool store_target_pose();
     void compute_cmd_vel();
+    void compute_cmd_vel_stanley();
+    void compute_cmd_vel_carrot();
     void compute_errors();
     void normalize_angular_error();
 
@@ -48,6 +52,9 @@ private:
     float angular_error = 0.0;
     float linear_error = 0.0;
     int start_pt = 0;
+    int prev_start_pt = 100;
 
+    bool pid_adjustment = false;
     PIDController pid_controller;
+    float max_speed = 0.5;
 };
