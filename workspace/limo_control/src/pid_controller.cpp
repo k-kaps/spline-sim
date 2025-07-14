@@ -6,8 +6,8 @@ PIDController::PIDController(float kp, float ki, float kd){
     this->ki = ki;
 }
 
-double PIDController::update(double error) {
-    if (error > 0.1) {
+bool PIDController::update(double error, geometry_msgs::msg::Twist& output_cmd_vel) {
+    if (std::fabs(error) > 0.1) {
         double val = kp * error;
         output_cmd_vel.angular.z = kp * error;
         return false;

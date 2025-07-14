@@ -5,9 +5,8 @@ class PIDController {
 public:
     PIDController() : fixing_yaw(true) {};
     PIDController(float kp, float ki, float kd);
-    double update(double error);
+    bool update(double error, geometry_msgs::msg::Twist& output_cmd_vel);
     void reset();
-    geometry_msgs::msg::Twist output_cmd_vel;
 
 private:
     
