@@ -21,7 +21,6 @@ def spawn_robot_in_gzsim(context, *args, **kwargs):
         PythonLaunchDescriptionSource(join(gz_sim_share, "launch", "gz_sim.launch.py")),
         launch_arguments={
             "gz_args" : PythonExpression(["'", world_file, " -r'"])
-
         }.items()
     )
 
@@ -48,7 +47,7 @@ def spawn_robot_in_gzsim(context, *args, **kwargs):
         name="tf_world_to_odom",
         arguments=[
             str(x_coord), str(y_coord), "0",
-            "0", "0", str(0.3),
+            "0", "0", "0",
             "world", "odom"
         ]
     )
