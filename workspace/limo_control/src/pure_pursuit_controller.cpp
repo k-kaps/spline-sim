@@ -43,14 +43,16 @@ void PurePursuitController::update_current_pose(const nav_msgs::msg::Odometry::S
 }
 
 void PurePursuitController::find_target_pose() {
-    for (int i = start_pt; i < robot_path.poses.size(); i++) {
+    for (int i = base_point; i < robot_path.poses.size(); i++) {
         double dist_x = robot_path.poses[i].pose.position.x - current_pose.position.x;
         double dist_y = robot_path.poses[i].pose.position.y - current_pose.position.y;
         double dist = std::sqrt((dist_x * dist_x) + (dist_y * dist_y));
         if (dist > lookahead_dist) {
             target_pose = robot_path.poses[i];
-            prev_start_pt = start_pt;
-            start_pt  = i;
+            base_point = i;
+            if (base_point == robot_path.poses.size() - 1) {
+                final_adj = true;
+            }
             return;
         }
     }
@@ -83,10 +85,18 @@ void PurePursuitController::update_control() {
 }
 
 void PurePursuitController::pure_pursuit() {
-    output_cmd_vel.linear.x = max_speed;
-    output_cmd_vel.angular.z = heading_const * angular_error;
+    if (final_adj == true && linear_error < 0.1) {
+        output_cmd_vel.linear.x = 0;
+        output_cmd_vel.angular.z = 0;
 
-    vel_pub_->publish(output_cmd_vel);
+        vel_pub_->publish(output_cmd_vel);
+    }
+    else {
+        output_cmd_vel.linear.x = max_speed;
+        output_cmd_vel.angular.z = heading_const * angular_error;
+
+        vel_pub_->publish(output_cmd_vel);
+    }
 }
 
 int main(int argc, char **argv) {

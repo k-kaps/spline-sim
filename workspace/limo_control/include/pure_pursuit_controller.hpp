@@ -26,8 +26,8 @@ private:
     const float kd_ = 0.3;
 
     bool init_ang_adj = false;
-    int start_pt = 0;
-    int prev_start_pt = 100;
+    bool final_adj = false;
+    int base_point = 0;
     float angular_error = 0.0;
     float linear_error = 0.0;
     float path_yaw = 0.0;
