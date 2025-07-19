@@ -22,7 +22,7 @@ setup(
     entry_points={
         'console_scripts': [
             'spline_path_publisher = limo_spline.spline_path_publisher:main',
-            'pure_pursuit = limo_spline.pure_pursuit:main',
+            'obstacle_publisher = limo_spline.obstacle_publisher:main',
         ],
     }
 )

@@ -37,7 +37,7 @@ def spawn_robot_in_gzsim(context, *args, **kwargs):
             "-z", "0.3",
             "-x", str(x_coord),
             "-y", str(y_coord),
-            "-Y", "0.3"
+            "-Y", "0.0"
         ]
     )
 
@@ -55,7 +55,7 @@ def spawn_robot_in_gzsim(context, *args, **kwargs):
     tf_odom_to_base_footprint = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        name="static_world_to_odom",
+        name="tf_odom_to_base_footprint",
         arguments=[
             "0", "0", "0",
             "0", "0", "0",
@@ -79,7 +79,17 @@ def launch_spline_nodes(context, *args, **kwargs):
         }]
     )
 
-    return [spline_path_publisher] 
+    obstacle_publisher = Node (
+        package="limo_spline",
+        executable="obstacle_publisher",
+        name="obstacle_publisher",
+        parameters = [{
+            "map_file" : map_file,
+            "technique" : technique
+        }]
+    )
+
+    return [spline_path_publisher, obstacle_publisher] 
 
 def generate_launch_description():
     limobot_path = get_package_share_directory("limo_simulation")
